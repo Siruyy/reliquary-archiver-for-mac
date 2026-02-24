@@ -1,29 +1,66 @@
-# reliquary-archiver
+# reliquary-archiver (macOS Fork)
 
-_tool to create a relic export from network packets of a certain turn-based anime game_
+_A macOS-compatible fork of [reliquary-archiver](https://github.com/IceDynamix/reliquary-archiver) — tool to create a relic export from network packets of a certain turn-based anime game._
+
+> **This fork exists to provide macOS support**, specifically for players running Honkai Star Rail via [PlayCover](https://playcover.io/) on Apple Silicon Macs. The original project only ships Windows and Linux binaries.
 
 json output format is based on the format of [HSR-Scanner](https://github.com/kel-z/HSR-Scanner)
 
 made to be used with [fribbels hsr optimizer](https://github.com/fribbels/hsr-optimizer)
 
-## run
+## What changed from the original?
 
-- If on Linux, or you know you want to use pcap (if you don't know what this means, you don't need to worry about it), follow the [pcap instructions](#pcap-instructions) at the bottom
-- Download latest release from [here](https://github.com/IceDynamix/reliquary-archiver/releases/)
-- **Launch the game and get to this screen. Do not go into the game yet**
-  ![main menu start screen](./hsr_hyperdrive.jpg)
-- run the archiver executable and wait until it says "listening with a timeout"
-  ![archiver listening for timeout](./listening_for_timeout.png)
-- start the game
-- if successful, the archiver should output a file to `archiver_output.json`
-  ![archiver visual guide](./archiver_visual_guide.webp)
+**No code changes were necessary.** The original codebase already uses Rust's `#[cfg]` conditional compilation to gate all Windows-specific code (GUI, auto-update, pktmon, admin escalation). The default features (`pcap` + `stream`) compile and run natively on macOS.
 
-you might have to disable your VPN or enable/disable wifi!
+This fork primarily serves as:
+- A macOS build target and documentation hub
+- A place to track macOS-specific issues if any arise
+
+## macOS Setup (PlayCover)
+
+### Prerequisites
+- **Rust toolchain** — Install via [rustup](https://rustup.rs/) if not already installed
+- **libpcap** — Pre-installed on macOS (no action needed)
+- **PlayCover** — With Honkai Star Rail installed
+
+### Build from source
+```bash
+git clone https://github.com/Siruyy/reliquary-archiver-for-mac.git
+cd reliquary-archiver-for-mac
+cargo build --release
+```
+
+> **Note:** The first build takes several minutes as it downloads game resource files and compiles all dependencies.
+
+### Usage
+
+#### One-time capture (exports a JSON file)
+1. Open PlayCover and launch Honkai Star Rail
+2. Get to the **"Click to Start"** screen — **do not enter the game yet**
+3. Open Terminal and run:
+   ```bash
+   sudo ./target/release/reliquary-archiver
+   ```
+4. Wait until it says **"listening with a timeout"**
+5. Click Start in the game
+6. The archiver outputs a JSON file (e.g., `archive_output-2026-02-24T14-00-00.json`)
+7. Import that JSON into [Fribbels HSR Optimizer](https://fribbels.github.io/hsr-optimizer)
+
+#### Live Import (real-time streaming to optimizer)
+1. Run the archiver with the stream flag:
+   ```bash
+   sudo ./target/release/reliquary-archiver -s
+   ```
+2. In the HSR Optimizer, enable **Live Import** and connect to `ws://127.0.0.1:23313/ws`
+3. Launch the game — relics and light cones will stream in live
+4. Press `Ctrl+C` in the terminal to stop
+
+> **Important:** You must use `sudo` because macOS restricts raw packet capture to root/admin users.
 
 ### cli usage
 
 ```
-Usage: reliquary-archiver.exe [OPTIONS] [OUTPUT]
+Usage: reliquary-archiver [OPTIONS] [OUTPUT]
 
 Arguments:
   [OUTPUT]  Path to output .json file to, per default: archive_output-%Y-%m-%dT%H-%M-%S.json
@@ -34,17 +71,11 @@ Options:
   -p, --websocket-port <PORT>    Port to listen on for the websocket server, [default: 23313]
   -v, --verbose...               How verbose the output should be, can be set up to 3 times. Has no effect if RUST_LOG is set
   -l, --log-path <LOG_PATH>      Path to output log to
-      --no-update                Don't check for updates, only applicable on Windows
-      --always-update            Update without asking for confirmation, only applicable on Windows
-      --auth-token <AUTH_TOKEN>  Github Auth token to use when checking for updates, only applicable on Windows
   -e, --exit-after-capture       Don't wait for enter to be pressed after capturing
   -h, --help                     Print help
 
 Pcap Only:
       --pcap <PCAP>              Read packets from .pcap file instead of capturing live packets
-
-Pktmon Only:
-      --etl <ETL>                Read packets from .etl file instead of capturing live packets
 ```
 
 to customize logging, either
@@ -55,31 +86,9 @@ to customize logging, either
 
 to output logs to a file, provide `--log-path <path>`. file logs will always be trace-level.
 
-## build from source
+## Credits
 
-- If building on Linux, or Windows with pcap, follow instructions [here](https://github.com/rust-pcap/pcap?tab=readme-ov-file#building)
-    - for me on windows, adding the `Packet.lib` and `wpcap.lib` from the sdk (check the x64 or arm dir)
-      to this directory was enough to link successfully
-- If building on Linux, there is also a dependency on `libwayland-dev`
-- `cargo build` / `cargo run`
-
-note that the necessary resource files are downloaded in the build script (`build.rs`) and compiled into the binary.
-
-## pcap instructions
-
-When running with the `pcap` feature (optional on Windows, required on Linux),
-the following requirements apply:
-
-- requires [npcap](https://npcap.com/) (windows) or `libpcap` (linux)
-    - when installing on windows, make sure to enable the "winpcap api-compatible mode".
-      if this is grayed out for you, see [here](https://github.com/IceDynamix/reliquary-archiver/issues/2)
-      for more details
-        - if you use wifi, enable `Support raw 802.11 traffic (and monitor mode) for wireless adapters`
-    - when building on Linux, set the `CAP_NET_RAW` capability on the resulting executable (
-      via [pcap(3pcap)](https://man.archlinux.org/man/pcap.3pcap#Under~5))
-      ```sh
-      sudo setcap CAP_NET_RAW=+ep target/release/reliquary-archiver
-      ```
+All credit goes to [IceDynamix](https://github.com/IceDynamix) for the original [reliquary-archiver](https://github.com/IceDynamix/reliquary-archiver) and the [reliquary](https://github.com/IceDynamix/reliquary) packet parsing library it's built on.
 
 ## related projects
 
