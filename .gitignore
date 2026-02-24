@@ -10,3 +10,8 @@ npcap-sdk*.zip
 *.bat
 *.vscode
 *.code-workspace
+
+# macOS / Crash logs
+crashlog.txt
+*.pcap
+*.etl
